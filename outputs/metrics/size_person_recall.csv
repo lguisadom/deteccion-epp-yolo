@@ -1,0 +1,4 @@
+tamano,personas,rango_area_relativa,recall
+pequeña,58,0.0001-0.0156,0.6379
+mediana,58,0.0160-0.0789,0.8621
+grande,58,0.0810-0.9906,1.0000

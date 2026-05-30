@@ -1,0 +1,11 @@
+class_id,class_name,train,valid,test,total
+0,Hardhat,3362,79,110,3551
+1,Mask,1743,21,28,1792
+2,NO-Hardhat,2318,69,41,2428
+3,NO-Mask,3209,74,79,3362
+4,NO-Safety Vest,3957,106,90,4153
+5,Person,9691,166,174,10031
+6,Safety Cone,3170,44,92,3306
+7,Safety Vest,3156,41,61,3258
+8,machinery,5238,55,44,5337
+9,vehicle,1534,42,41,1617

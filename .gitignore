@@ -1,0 +1,37 @@
+# === Entornos de Python ===
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# === Secretos (NUNCA subir a GitHub) ===
+.env
+kaggle.json
+*.key
+
+# === Datos pesados (se descargan/colocan aparte, no se versionan) ===
+datasets/
+data/
+
+# === Resultados pesados / regenerables (se recrean con run_all.sh) ===
+runs/
+*.pt
+*.mp4
+*.avi
+outputs/training/
+outputs/validation/
+outputs/occlusion/
+outputs/compliance/video/
+
+# Se CONSERVAN (evidencia ligera para el informe):
+#   outputs/metrics/           -> CSVs de métricas
+#   outputs/figures/           -> gráficos (distribución, anotaciones)
+#   outputs/compliance/images/ -> frames anotados del verificador (entregable 4)
+#   report/figures/            -> figuras curadas del informe
+# Nota: outputs/compliance/video/ se ignora (videos y miles de frames, regenerables).
+
+# === Sistema operativo / editores ===
+.DS_Store
+.ipynb_checkpoints/
+.vscode/
