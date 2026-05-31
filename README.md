@@ -4,14 +4,15 @@ Sistema de visión por computadora que detecta trabajadores y su Equipo de Prote
 (EPP) en imágenes de obras, y **verifica el cumplimiento** (casco + chaleco) por persona,
 reportando una tasa de cumplimiento por fotograma.
 
-> Examen Parcial — Redes Neuronales y Aprendizaje Profundo. Pregunta 3.
+> Examen Parcial - Redes Neuronales y Aprendizaje Profundo. Pregunta 3.
 
 ## Dataset
 
-*Construction Site Safety* (Roboflow Universe, CC BY 4.0): 10 clases y 2603 / 114 / 82 imágenes
-(train / val / test, partición ya provista). Presenta un fuerte desbalance de clases (6.2x entre
-la más y la menos frecuente: `Person` con 10 031 instancias frente a `vehicle` con 1617), lo que
-condiciona el aprendizaje de las clases de incumplimiento, que son justamente las más escasas.
+*Construction Site Safety* (Roboflow Universe, versión 27, CC BY 4.0): 10 clases y 2603 / 114 / 82
+imágenes (train / val / test, partición ya provista). Presenta un fuerte desbalance de clases (6.2x
+entre la más y la menos frecuente: `Person` con 10 031 instancias frente a `vehicle` con 1617), lo
+que condiciona el aprendizaje de las clases de incumplimiento, que son justamente las más escasas.
+El dataset no se incluye en el repositorio; lo descarga `src/01_download_dataset.py`.
 
 ![Distribución de instancias por clase](report/figures/distribucion_clases.png)
 
@@ -19,7 +20,8 @@ condiciona el aprendizaje de las clases de incumplimiento, que son justamente la
 
 Detector **YOLOv8s** (variante *small*, anchor-free) con *transfer learning* desde COCO. Ajuste
 fino (fine-tuning) durante 60 épocas a 640 px de entrada, con data augmentation (mosaic) y early
-stopping. Las curvas muestran un entrenamiento estable, sin sobreajuste.
+stopping. Las curvas muestran un entrenamiento estable, sin sobreajuste. Los pesos entrenados
+(`best.pt`) no se versionan (son pesados): se generan al ejecutar el entrenamiento.
 
 ![Curvas de entrenamiento](report/figures/curvas_entrenamiento.png)
 
@@ -49,9 +51,31 @@ asocia el EPP a cada persona y decide:
 > Vest) en su torso, sin violaciones (NO-Hardhat / NO-Safety Vest). Criterio conservador
 > (pro-seguridad): EPP faltante = no conforme.
 
+El detector y el verificador son piezas separadas: el primero detecta objetos, el segundo decide
+cumplimiento. Esto mantiene el sistema interpretable y permite ajustar la lógica sin reentrenar.
 Salida: cajas verde (cumple) / rojo (no cumple) + tasa de cumplimiento del fotograma.
 
 ![Demostración del verificador sobre imágenes de prueba](report/figures/demo_cumplimiento.png)
+
+## Material de demostración
+
+El repositorio incluye la evidencia completa del verificador:
+
+- **Imágenes anotadas** del conjunto de prueba en `outputs/compliance/images/` (cajas verdes para
+  quien cumple, rojas para quien no, con la tasa de cumplimiento por imagen).
+- **Tabla de cumplimiento por imagen:** `outputs/metrics/compliance_per_image.csv`.
+- **Videos anotados** de obras (vía `src/09_predict_video.py`), cada uno con su tabla de tasa de
+  cumplimiento por fotograma.
+
+Permiten revisar casos de cumplimiento, de incumplimiento correctamente detectado y de falsos
+positivos por equipo no detectado.
+
+### Análisis complementario a nivel de imagen (oclusión)
+
+Además del análisis por persona, se estimó la oclusión a nivel de imagen y se midió el mAP@0.5 por
+nivel (bajo / medio / alto):
+
+![mAP@0.5 por nivel de oclusión estimada de la imagen](report/figures/occlusion_map.png)
 
 ## Robustez: hallazgo clave (oclusión vs tamaño)
 
@@ -79,12 +103,12 @@ factor real de dificultad es el **tamaño del objeto**, no la oclusión medida p
 │   ├── 03_visualize_samples.py  # sanity check de anotaciones
 │   ├── 04_train.py              # entrena YOLOv8
 │   ├── 05_validate.py           # mAP por clase + matriz de confusión
-│   ├── 06_predict_images.py     # demo del verificador de cumplimiento (imágenes)
-│   ├── 07_occlusion_analysis.py # robustez ante oclusión (recall por persona)
+│   ├── 06_predict_images.py     # demo del verificador (imágenes)
+│   ├── 07_occlusion_analysis.py # robustez ante oclusión
 │   ├── 08_size_analysis.py      # robustez ante objetos pequeños
 │   ├── 09_predict_video.py      # demo del verificador sobre video
-│   └── compliance_checker.py    # módulo: lógica de cumplimiento (importado)
-├── notebooks/                 # cuadernos de Google Colab (ver sección Colab)
+│   └── compliance_checker.py    # módulo: lógica de cumplimiento
+├── notebooks/                 # cuadernos de Google Colab
 ├── outputs/                   # métricas, figuras, imágenes anotadas (generado)
 └── report/figures/            # figuras seleccionadas para el informe
 ```
@@ -92,96 +116,53 @@ factor real de dificultad es el **tamaño del objeto**, no la oclusión medida p
 ## Requisitos
 
 - Python 3.12, GPU NVIDIA recomendada (entrenamiento). Probado en RTX 4070 (8 GB), CUDA.
-- Cuenta gratuita de [Roboflow](https://roboflow.com) (para descargar el dataset).
 
 ## Instalación
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install --upgrade pip
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-# Verificar GPU:
-python -c "import torch; print('CUDA:', torch.cuda.is_available())"
 ```
 
 ## Configuración (clave de Roboflow)
 
+Para descargar el dataset necesitas una API key de Roboflow (gratuita):
+
 ```bash
 cp .env.example .env
-# Editar .env y poner tu ROBOFLOW_API_KEY
-# (Roboflow -> Settings del workspace -> Roboflow API -> Private API Key)
+# edita .env y coloca tu ROBOFLOW_API_KEY
 ```
 
 ## Ejecución
-
-### Pipeline completo (un solo comando)
 
 ```bash
 bash run_all.sh
 ```
 
-Ejecuta en orden: descarga → análisis → entrenamiento → evaluación → demo → análisis de
-robustez. El paso de entrenamiento toma ~30 min en GPU.
-
-### Paso a paso
+El script ejecuta el pipeline completo en orden: descarga, análisis, entrenamiento, evaluación,
+verificador sobre imágenes y análisis de robustez. También puedes correr cada script por separado:
 
 ```bash
-python src/01_download_dataset.py     # descarga el dataset
-python src/02_analyze_dataset.py      # distribución/desbalance de clases
-python src/03_visualize_samples.py    # verifica anotaciones
-python src/04_train.py                # entrena (genera outputs/training/.../best.pt)
-python src/05_validate.py             # métricas en test + matriz de confusión
-python src/06_predict_images.py       # demo de cumplimiento en imágenes de test
-python src/07_occlusion_analysis.py   # recall por nivel de oclusión
-python src/08_size_analysis.py        # recall por tamaño (objetos pequeños)
+python src/01_download_dataset.py
+# ...
+python src/09_predict_video.py data/videos/<archivo>.mp4
 ```
-
-### Inferencia sobre imágenes o video propios
-
-El verificador puede aplicarse a material nuevo (no visto en el entrenamiento):
-
-```bash
-# Imágenes del conjunto de prueba (genera outputs/compliance/images/):
-python src/06_predict_images.py
-
-# Un video propio: colócalo en data/videos/ y pásalo como argumento.
-# data/ no se versiona; cada video produce su propia subcarpeta de resultados.
-python src/09_predict_video.py data/videos/obra.mp4
-```
-
-La salida de video queda en `outputs/compliance/video/<nombre>/` (video anotado, fotogramas y
-un CSV con la tasa de cumplimiento por fotograma).
 
 ## Ejecución en Google Colab
 
-En `notebooks/` hay dos cuadernos listos para Colab (activar GPU en *Entorno de ejecución →
-Cambiar tipo de entorno → GPU*):
+En `notebooks/` hay cuadernos listos para Colab (activar GPU en *Entorno de ejecución -> Cambiar
+tipo de entorno*):
 
-- **`colab_epp_yolo.ipynb`** — clona este repositorio, instala dependencias y ejecuta el
-  pipeline completo (o solo la inferencia con un modelo ya entrenado).
-- **`colab_epp_yolo_autocontenido.ipynb`** — incluye todo el código fuente embebido; reproduce
-  el proyecto de extremo a extremo sin clonar el repositorio.
-
-Ambos requieren una API key gratuita de Roboflow para descargar el dataset.
-
-## Dataset
-
-[Construction Site Safety](https://universe.roboflow.com/roboflow-universe-projects/construction-site-safety)
-(Roboflow Universe, v27, licencia CC BY 4.0). 10 clases: Hardhat, Mask, NO-Hardhat, NO-Mask,
-NO-Safety Vest, Person, Safety Cone, Safety Vest, machinery, vehicle. ~2,800 imágenes
-(train 2603 / valid 114 / test 82).
+- `colab_epp_yolo.ipynb`: clona el repositorio y ejecuta el pipeline.
+- `colab_epp_yolo_autocontenido.ipynb`: incluye todo el código embebido en el cuaderno.
+- `colab_epp_yolo_autocontenido_con_prueba.ipynb`: igual que el anterior, más una celda para
+  probar el modelo con una imagen propia.
 
 ## Limitaciones
 
-- La asociación EPP→persona es geométrica 2D; no maneja perspectiva ni oclusión total.
-- El verificador depende del detector: un EPP no detectado produce un falso positivo de
-  no-conformidad.
-- La detección de objetos pequeños/lejanos es la debilidad principal (recall ~0.64 en personas
-  pequeñas).
-- El dataset está curado: las violaciones (NO-EPP) están más representadas que en grabaciones
-  reales.
-
-## Modelo
-
-YOLOv8s (Ultralytics), fine-tuning desde pesos COCO. Configuración documentada en `src/04_train.py`.
+- El detector solo reconoce las 10 clases anotadas en el dataset (no incluye arneses, por ejemplo).
+- El verificador usa reglas geométricas (regiones de cabeza/torso); puede fallar con poses
+  inusuales, perspectivas extremas u oclusión severa.
+- Las clases de incumplimiento (NO-) y los objetos pequeños son los más débiles.
+- El análisis se basa en una sola corrida de entrenamiento (semilla fija); no se reportan
+  intervalos de confianza sobre múltiples corridas.
