@@ -6,6 +6,23 @@ reportando una tasa de cumplimiento por fotograma.
 
 > Examen Parcial — Redes Neuronales y Aprendizaje Profundo. Pregunta 3.
 
+## Dataset
+
+*Construction Site Safety* (Roboflow Universe, CC BY 4.0): 10 clases y 2603 / 114 / 82 imágenes
+(train / val / test, partición ya provista). Presenta un fuerte desbalance de clases (6.2x entre
+la más y la menos frecuente: `Person` con 10 031 instancias frente a `vehicle` con 1617), lo que
+condiciona el aprendizaje de las clases de incumplimiento, que son justamente las más escasas.
+
+![Distribución de instancias por clase](report/figures/distribucion_clases.png)
+
+## Modelo y entrenamiento
+
+Detector **YOLOv8s** (variante *small*, anchor-free) con *transfer learning* desde COCO. Ajuste
+fino (fine-tuning) durante 60 épocas a 640 px de entrada, con data augmentation (mosaic) y early
+stopping. Las curvas muestran un entrenamiento estable, sin sobreajuste.
+
+![Curvas de entrenamiento](report/figures/curvas_entrenamiento.png)
+
 ## Resultados principales (conjunto de prueba)
 
 | Métrica | Valor |
@@ -19,6 +36,10 @@ Clases con mejor desempeño: Safety Vest (mAP50 0.89), Person (0.88), Hardhat (0
 Debilidad principal: **objetos pequeños** (Safety Cone 0.46; recall en personas pequeñas 0.64
 vs 1.00 en grandes).
 
+![Matriz de confusión normalizada (test)](report/figures/matriz_confusion_test.png)
+
+![Curva precision-recall por clase (test)](report/figures/curva_PR_test.png)
+
 ## Verificador de cumplimiento
 
 A partir de las detecciones de YOLO, un módulo basado en reglas (`src/compliance_checker.py`)
@@ -29,6 +50,19 @@ asocia el EPP a cada persona y decide:
 > (pro-seguridad): EPP faltante = no conforme.
 
 Salida: cajas verde (cumple) / rojo (no cumple) + tasa de cumplimiento del fotograma.
+
+![Demostración del verificador sobre imágenes de prueba](report/figures/demo_cumplimiento.png)
+
+## Robustez: hallazgo clave (oclusión vs tamaño)
+
+Se evaluó la robustez ante oclusión partiendo el conjunto de prueba por nivel de solapamiento de
+cajas. El recall **no cae** con la oclusión (0.69 / 0.91 / 0.90), un resultado contraintuitivo.
+La causa es una **variable de confusión**: el solapamiento de cajas está correlacionado con el
+tamaño (las personas muy solapadas suelen ser grandes y cercanas, fáciles de detectar). Al aislar
+el tamaño, el patrón es claro: el recall sube de 0.64 (personas pequeñas) a 1.00 (grandes). El
+factor real de dificultad es el **tamaño del objeto**, no la oclusión medida por solapamiento.
+
+![Recall por tamaño relativo de la persona (test)](report/figures/size_recall.png)
 
 ## Estructura del repositorio
 
