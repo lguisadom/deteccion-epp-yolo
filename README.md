@@ -6,6 +6,59 @@ reportando una tasa de cumplimiento por fotograma.
 
 > Examen Parcial - Redes Neuronales y Aprendizaje Profundo. Pregunta 3.
 
+## Revisión de la literatura
+
+La detección automática de EPP en obras de construcción es un problema activo en visión por
+computadora. Este trabajo se apoya en las siguientes referencias:
+
+**Fundamentos del detector**
+
+- **Redmon et al. (CVPR 2016)** — *You Only Look Once: Unified, Real-Time Object Detection.*
+  Propuso el paradigma YOLO de detección en un solo paso (*single-stage*), base de la familia de
+  modelos que usamos. Introdujo la idea de tratar la detección como un problema de regresión directa
+  sobre una grilla de la imagen, logrando velocidad en tiempo real.
+
+- **Lin et al. (ICCV 2017)** — *Focal Loss for Dense Object Detection.*
+  Identificó el desbalance extremo entre objetos de fondo y objetos de interés como la causa
+  principal del bajo desempeño en detectores densos. Propuso la *Focal Loss*, que pondera más los
+  ejemplos difíciles durante el entrenamiento. Relevante para nuestro trabajo porque el dataset
+  presenta un desbalance de 6.2x entre clases, y las clases de incumplimiento (las más escasas)
+  son las más débiles. Se cita como trabajo futuro para mejorar esas clases.
+
+**Aplicaciones de detección de EPP en construcción**
+
+- **Wang et al. — *Sensors* (2021)** — *Fast Personal Protective Equipment Detection for Real
+  Construction Sites Using Deep Learning Approaches.*
+  Evaluó detectores de aprendizaje profundo para EPP en obras reales, reportando que las caídas
+  desde altura concentran más de la mitad de las muertes en el sector y que el casco reduce hasta
+  un 95% el riesgo de lesión cerebral grave. Sustenta la motivación del problema en este trabajo.
+
+- **Hayat y Morgado-Dias — *Applied Sciences* (2022)** — *Deep Learning-Based Automatic Safety
+  Helmet Detection System for Construction Safety.*
+  Propuso un sistema de detección automática de cascos mediante aprendizaje profundo para entornos
+  de construcción. Complementa la base estadística de siniestralidad y valida la viabilidad del
+  enfoque con redes convolucionales profundas para este dominio.
+
+- **Barlybayev et al. — *Cogent Engineering* (2024)** — *Personal Protective Equipment Detection
+  Using YOLOv8 Architecture on Object Detection Benchmark Datasets.*
+  Evaluó YOLOv8 específicamente para detección de EPP sobre datasets de referencia, confirmando su
+  idoneidad para este dominio y aportando comparaciones de desempeño entre variantes del modelo.
+  Es el trabajo más directamente comparable al nuestro en arquitectura y tarea.
+
+- **Wei et al. — *Scientific Reports* (2024)** — *Research on Helmet Wearing Detection Method
+  Based on Deep Learning.*
+  Estudió métodos de detección del uso de casco mediante aprendizaje profundo, incluyendo
+  estrategias para mejorar la detección en condiciones de oclusión y escala variable, dos de las
+  limitaciones que identificamos en nuestro análisis de robustez.
+
+**Posición de este trabajo respecto a la literatura**
+
+La mayoría de los trabajos citados se enfocan en la detección de objetos individuales (casco,
+chaleco) sin un módulo explícito de verificación de cumplimiento por persona. Este trabajo aporta
+esa capa: un verificador basado en reglas geométricas que asocia el EPP detectado a cada persona y
+emite un veredicto individual, produciendo una tasa de cumplimiento por fotograma que los trabajos
+anteriores no reportan directamente.
+
 ## Dataset
 
 *Construction Site Safety* (Roboflow Universe, versión 27, CC BY 4.0): 10 clases y 2603 / 114 / 82
