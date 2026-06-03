@@ -8,73 +8,113 @@ reportando una tasa de cumplimiento por fotograma.
 
 ## Revisión de la literatura
 
-La detección automática de EPP en obras de construcción es un problema activo en visión por
-computadora. Este trabajo se apoya en las siguientes referencias:
+La detección automática de EPP en obras de construcción se ubica en la intersección de dos líneas
+de investigación maduras: la **detección de objetos en tiempo real** y la **seguridad
+ocupacional asistida por visión por computadora**. La construcción es uno de los sectores con mayor
+siniestralidad laboral —las caídas desde altura concentran más de la mitad de las muertes—, y el
+uso correcto del EPP es una de las barreras de control más efectivas: el casco reduce hasta un
+**95%** el riesgo de lesión cerebral grave (Wang et al., 2021). Verificar ese uso de forma
+automática y continua, en lugar de mediante inspección manual esporádica, es el problema que motiva
+este trabajo.
 
-**Fundamentos del detector**
+### Evolución de los detectores de objetos
+
+El recorrido técnico parte de la disyuntiva entre detectores de **dos etapas** y de **una etapa**.
+
+- **Ren et al. (NeurIPS 2015)** — *Faster R-CNN: Towards Real-Time Object Detection with Region
+  Proposal Networks.* Consolidó el paradigma de dos etapas (primero proponer regiones, luego
+  clasificarlas), de alta precisión pero costoso en cómputo. Sirve como punto de contraste para
+  entender por qué la familia YOLO resultó más adecuada para un escenario que exige operar sobre
+  video en tiempo real.
 
 - **Redmon et al. (CVPR 2016)** — *You Only Look Once: Unified, Real-Time Object Detection.*
-  Propuso el paradigma YOLO de detección en un solo paso (*single-stage*), base de la familia de
-  modelos que usamos. Introdujo la idea de tratar la detección como un problema de regresión directa
-  sobre una grilla de la imagen, logrando velocidad en tiempo real.
+  Reformuló la detección como un único problema de regresión sobre una grilla de la imagen,
+  eliminando la etapa de propuesta de regiones. Este enfoque *single-stage* es la base de la familia
+  de modelos empleada en este trabajo y el que habilita la inferencia a velocidad de video.
 
-- **Lin et al. (ICCV 2017)** — *Focal Loss for Dense Object Detection.*
-  Identificó el desbalance extremo entre objetos de fondo y objetos de interés como la causa
-  principal del bajo desempeño en detectores densos. Propuso la *Focal Loss*, que pondera más los
-  ejemplos difíciles durante el entrenamiento. Relevante para nuestro trabajo porque el dataset
-  presenta un desbalance de 6.2x entre clases, y las clases de incumplimiento (las más escasas)
-  son las más débiles. Se cita como trabajo futuro para mejorar esas clases.
+- **Lin et al. (ICCV 2017)** — *Focal Loss for Dense Object Detection.* Identificó el desbalance
+  extremo entre fondo y objetos de interés como la causa principal del bajo desempeño de los
+  detectores densos, y propuso la *Focal Loss*, que reasigna peso hacia los ejemplos difíciles
+  durante el entrenamiento. Es directamente pertinente aquí: el dataset presenta un desbalance de
+  **6.2x** entre clases, y las clases de incumplimiento —las más escasas— son precisamente las más
+  débiles. Por eso se la propone como vía de mejora futura.
 
-**Aplicaciones de detección de EPP en construcción**
+### Detección de EPP y verificación de cumplimiento en construcción
+
+Sobre esa base técnica, una segunda línea de trabajos aplica la detección al dominio específico de
+la seguridad en obra, con una progresión clara: del simple *¿hay casco?* hacia el más exigente
+*¿esta persona en particular lo lleva puesto?*.
+
+- **Fang et al. — *Automation in Construction* (2018)** — *Detecting Non-Hardhat-Use by a Deep
+  Learning Method from Far-Field Surveillance Videos.* Trabajo pionero en detectar el **no uso** de
+  casco a partir de cámaras de vigilancia reales, demostrando la viabilidad del enfoque en
+  condiciones de campo lejano (objetos pequeños y borrosos), justamente la dificultad que reaparece
+  en el análisis de robustez de este proyecto.
+
+- **Nath, Behzadan y Paal — *Automation in Construction* (2020)** — *Deep Learning for Site Safety:
+  Real-Time Detection of Personal Protective Equipment.* Referencia central para la arquitectura de
+  este trabajo: formaliza tres estrategias de verificación de cumplimiento, una de las cuales
+  detecta a la persona y su EPP por separado y luego **asocia** ambos para emitir un veredicto por
+  trabajador. El verificador basado en reglas geométricas de este proyecto es una adaptación
+  directa de esa idea.
+
+- **Delhi, Sankarlal y Thomas — *Frontiers in Built Environment* (2020)** — *Detection of Personal
+  Protective Equipment (PPE) Compliance on Construction Site Using Computer Vision Based Deep
+  Learning Techniques.* Aborda explícitamente el **cumplimiento** (no solo la detección) y define
+  estados de conformidad por trabajador, confirmando la relevancia de la capa de verificación como
+  objeto de estudio por derecho propio.
 
 - **Wang et al. — *Sensors* (2021)** — *Fast Personal Protective Equipment Detection for Real
-  Construction Sites Using Deep Learning Approaches.*
-  Evaluó detectores de aprendizaje profundo para EPP en obras reales, reportando que las caídas
-  desde altura concentran más de la mitad de las muertes en el sector y que el casco reduce hasta
-  un 95% el riesgo de lesión cerebral grave. Sustenta la motivación del problema en este trabajo.
+  Construction Sites Using Deep Learning Approaches.* Evaluó detectores profundos sobre obras reales
+  y aportó la base estadística de siniestralidad (más de la mitad de las muertes por caídas; 95% de
+  reducción de riesgo con casco) que sustenta la motivación del problema.
 
 - **Hayat y Morgado-Dias — *Applied Sciences* (2022)** — *Deep Learning-Based Automatic Safety
-  Helmet Detection System for Construction Safety.*
-  Propuso un sistema de detección automática de cascos mediante aprendizaje profundo para entornos
-  de construcción. Complementa la base estadística de siniestralidad y valida la viabilidad del
-  enfoque con redes convolucionales profundas para este dominio.
+  Helmet Detection System for Construction Safety.* Validó la viabilidad de un sistema de detección
+  automática de cascos con redes convolucionales profundas para este dominio.
 
 - **Barlybayev et al. — *Cogent Engineering* (2024)** — *Personal Protective Equipment Detection
-  Using YOLOv8 Architecture on Object Detection Benchmark Datasets.*
-  Evaluó YOLOv8 específicamente para detección de EPP sobre datasets de referencia, confirmando su
-  idoneidad para este dominio y aportando comparaciones de desempeño entre variantes del modelo.
-  Es el trabajo más directamente comparable al nuestro en arquitectura y tarea.
+  Using YOLOv8 Architecture on Object Detection Benchmark Datasets.* Es el trabajo más directamente
+  comparable en arquitectura y tarea: evalúa **YOLOv8** específicamente para EPP sobre datasets de
+  referencia y aporta comparaciones de desempeño entre variantes del modelo.
 
-- **Wei et al. — *Scientific Reports* (2024)** — *Research on Helmet Wearing Detection Method
-  Based on Deep Learning.*
-  Estudió métodos de detección del uso de casco mediante aprendizaje profundo, incluyendo
-  estrategias para mejorar la detección en condiciones de oclusión y escala variable, dos de las
-  limitaciones que identificamos en nuestro análisis de robustez.
+- **Wei et al. — *Scientific Reports* (2024)** — *Research on Helmet Wearing Detection Method Based
+  on Deep Learning.* Estudió estrategias para mejorar la detección de casco bajo oclusión y escala
+  variable, las dos limitaciones que el análisis de robustez de este trabajo termina identificando.
 
-**Posición de este trabajo respecto a la literatura**
+### Posición de este trabajo respecto a la literatura
 
-La mayoría de los trabajos citados se enfocan en la detección de objetos individuales (casco,
-chaleco) sin un módulo explícito de verificación de cumplimiento por persona. Este trabajo aporta
-esa capa: un verificador basado en reglas geométricas que asocia el EPP detectado a cada persona y
-emite un veredicto individual, produciendo una tasa de cumplimiento por fotograma que los trabajos
-anteriores no reportan directamente.
+La mayor parte de la literatura aplicada se concentra en la **detección de objetos individuales**
+(casco, chaleco) y reporta su desempeño mediante mAP por clase. La verificación de cumplimiento
+*por persona* es menos frecuente y, cuando aparece (Nath et al., 2020; Delhi et al., 2020), suele
+quedar descrita conceptualmente más que como evidencia reproducible. La contribución de este
+trabajo no es proponer una arquitectura nueva, sino **integrar y hacer explícita** esa capa de
+verificación sobre un detector YOLOv8: un módulo basado en reglas geométricas que asocia el EPP
+detectado a cada persona, emite un veredicto individual y agrega una **tasa de cumplimiento por
+fotograma**, acompañada de material visual que permite auditar cada decisión. A ello se suma un
+hallazgo metodológico —discutido más adelante— sobre la variable que realmente gobierna la
+dificultad de detección.
 
 ## Dataset
 
-*Construction Site Safety* (Roboflow Universe, versión 27, CC BY 4.0): 10 clases y 2603 / 114 / 82
-imágenes (train / val / test, partición ya provista). Presenta un fuerte desbalance de clases (6.2x
-entre la más y la menos frecuente: `Person` con 10 031 instancias frente a `vehicle` con 1617), lo
-que condiciona el aprendizaje de las clases de incumplimiento, que son justamente las más escasas.
-El dataset no se incluye en el repositorio; lo descarga `src/01_download_dataset.py`.
+*Construction Site Safety* (Roboflow Universe, versión 27, CC BY 4.0) reúne **10 clases** y
+**2603 / 114 / 82** imágenes (train / val / test, con la partición ya provista). Su rasgo más
+condicionante es un fuerte **desbalance de clases (6.2x)** entre la más y la menos frecuente:
+`Person` aparece con **10 031** instancias frente a las **1617** de `vehicle`. Este desbalance no es
+un detalle menor —empuja al modelo a aprender bien lo abundante y a descuidar lo escaso—, y resulta
+que lo escaso coincide con lo más crítico para la seguridad: las clases de incumplimiento (NO-). El
+dataset no se incluye en el repositorio; lo descarga `src/01_download_dataset.py`.
 
 ![Distribución de instancias por clase](report/figures/distribucion_clases.png)
 
 ## Modelo y entrenamiento
 
-Detector **YOLOv8s** (variante *small*, anchor-free) con *transfer learning* desde COCO. Ajuste
-fino (fine-tuning) durante 60 épocas a 640 px de entrada, con data augmentation (mosaic) y early
-stopping. Las curvas muestran un entrenamiento estable, sin sobreajuste. Los pesos entrenados
-(`best.pt`) no se versionan (son pesados): se generan al ejecutar el entrenamiento.
+El detector es **YOLOv8s** (variante *small*, *anchor-free*), inicializado por *transfer learning*
+desde COCO. El ajuste fino se realizó durante **60 épocas** a **640 px** de entrada, con *data
+augmentation* (mosaic) y *early stopping*. Las curvas de entrenamiento se mantienen estables y sin
+señales de sobreajuste: las pérdidas de entrenamiento y validación descienden en paralelo. Los
+pesos resultantes (`best.pt`) no se versionan por su tamaño; se regeneran al ejecutar el
+entrenamiento.
 
 ![Curvas de entrenamiento](report/figures/curvas_entrenamiento.png)
 
@@ -82,14 +122,17 @@ stopping. Las curvas muestran un entrenamiento estable, sin sobreajuste. Los pes
 
 | Métrica | Valor |
 |---|---|
-| mAP@0.5 | 0.767 |
-| mAP@0.5:0.95 | 0.492 |
-| Precision | 0.907 |
-| Recall | 0.710 |
+| mAP@0.5 | **0.767** |
+| mAP@0.5:0.95 | **0.492** |
+| Precision | **0.907** |
+| Recall | **0.710** |
 
-Clases con mejor desempeño: Safety Vest (mAP50 0.89), Person (0.88), Hardhat (0.87).
-Debilidad principal: **objetos pequeños** (Safety Cone 0.46; recall en personas pequeñas 0.64
-vs 1.00 en grandes).
+El modelo alcanza una **precisión alta (0.907)**: cuando afirma haber detectado un objeto, casi
+siempre acierta. El recall, más moderado (**0.710**), anticipa el punto débil que confirma el
+análisis posterior. Las clases con mejor desempeño son **Safety Vest (mAP50 0.89)**, **Person
+(0.88)** y **Hardhat (0.87)** —es decir, los elementos grandes y frecuentes—, mientras que la
+debilidad principal está en los **objetos pequeños**: Safety Cone cae a **0.46** y el recall en
+personas pequeñas baja a **0.64** frente al **1.00** en personas grandes.
 
 ![Matriz de confusión normalizada (test)](report/figures/matriz_confusion_test.png)
 
@@ -97,16 +140,24 @@ vs 1.00 en grandes).
 
 ## Verificador de cumplimiento
 
-A partir de las detecciones de YOLO, un módulo basado en reglas (`src/compliance_checker.py`)
-asocia el EPP a cada persona y decide:
+A partir de las detecciones de YOLO, un módulo basado en reglas (`src/compliance_checker.py`) asocia
+el EPP a cada persona y aplica el siguiente criterio:
 
-> Una persona **cumple** si tiene casco (Hardhat) en su región de cabeza **y** chaleco (Safety
-> Vest) en su torso, sin violaciones (NO-Hardhat / NO-Safety Vest). Criterio conservador
-> (pro-seguridad): EPP faltante = no conforme.
+> Una persona **cumple** si tiene casco (Hardhat) en su región de cabeza **y** chaleco (Safety Vest)
+> en su torso, sin violaciones (NO-Hardhat / NO-Safety Vest). El criterio es **conservador
+> (pro-seguridad)**: ante EPP faltante, se declara *no conforme*.
 
-El detector y el verificador son piezas separadas: el primero detecta objetos, el segundo decide
-cumplimiento. Esto mantiene el sistema interpretable y permite ajustar la lógica sin reentrenar.
-Salida: cajas verde (cumple) / rojo (no cumple) + tasa de cumplimiento del fotograma.
+La clave del diseño es que **detector y verificador son piezas separadas**: el primero detecta
+objetos; el segundo decide cumplimiento. Esta separación mantiene el sistema interpretable —cada
+veredicto puede rastrearse hasta las detecciones que lo originaron— y permite ajustar la lógica de
+seguridad sin reentrenar la red. La salida es directa de leer: cajas **verdes** para quien cumple,
+**rojas** para quien no, más la tasa de cumplimiento del fotograma.
+
+Aplicado al conjunto de prueba (**82** imágenes, de las cuales **60** contienen personas y suman
+**194** personas detectadas), el verificador reporta una **tasa global de cumplimiento del 19.6%**
+(**38** personas conformes). La cifra es deliberadamente baja porque el dataset sobre-representa las
+violaciones de EPP respecto a una grabación real; debe leerse como demostración del mecanismo, no
+como una estadística de campo.
 
 ![Demostración del verificador sobre imágenes de prueba](report/figures/demo_cumplimiento.png)
 
@@ -120,8 +171,8 @@ El repositorio incluye la evidencia completa del verificador:
 - **Videos anotados** de obras (vía `src/09_predict_video.py`), cada uno con su tabla de tasa de
   cumplimiento por fotograma.
 
-Permiten revisar casos de cumplimiento, de incumplimiento correctamente detectado y de falsos
-positivos por equipo no detectado.
+Este material permite revisar los tres casos de interés: cumplimiento, incumplimiento correctamente
+detectado y falso positivo por equipo no detectado.
 
 ### Análisis complementario a nivel de imagen (oclusión)
 
@@ -132,12 +183,16 @@ nivel (bajo / medio / alto):
 
 ## Robustez: hallazgo clave (oclusión vs tamaño)
 
-Se evaluó la robustez ante oclusión partiendo el conjunto de prueba por nivel de solapamiento de
-cajas. El recall **no cae** con la oclusión (0.69 / 0.91 / 0.90), un resultado contraintuitivo.
-La causa es una **variable de confusión**: el solapamiento de cajas está correlacionado con el
-tamaño (las personas muy solapadas suelen ser grandes y cercanas, fáciles de detectar). Al aislar
-el tamaño, el patrón es claro: el recall sube de 0.64 (personas pequeñas) a 1.00 (grandes). El
-factor real de dificultad es el **tamaño del objeto**, no la oclusión medida por solapamiento.
+El experimento de robustez parte de una hipótesis intuitiva —la oclusión debería degradar la
+detección— y termina refutándola. Al partir el conjunto de prueba por nivel de solapamiento de
+cajas, el recall **no cae** con la oclusión, sino que se mantiene o incluso sube
+(**0.69 / 0.91 / 0.90**). El resultado es contraintuitivo, y la explicación es una **variable de
+confusión**: el solapamiento de cajas está correlacionado con el tamaño, porque las personas muy
+solapadas suelen ser grandes y cercanas, justamente las más fáciles de detectar. Al **aislar el
+tamaño**, el patrón emerge sin ambigüedad: el recall sube de **0.64** (personas pequeñas) a
+**1.00** (grandes). La conclusión es que el factor real de dificultad es el **tamaño del objeto**,
+no la oclusión medida por solapamiento. Este es el principal aporte metodológico del trabajo y un
+recordatorio de cuán fácil es confundir correlación con causa en la evaluación de modelos.
 
 ![Recall por tamaño relativo de la persona (test)](report/figures/size_recall.png)
 
@@ -179,11 +234,11 @@ pip install -r requirements.txt
 
 ## Configuración (clave de Roboflow)
 
-Para descargar el dataset necesitas una API key de Roboflow (gratuita):
+La descarga del dataset requiere una API key de Roboflow (gratuita):
 
 ```bash
 cp .env.example .env
-# edita .env y coloca tu ROBOFLOW_API_KEY
+# editar .env y colocar el ROBOFLOW_API_KEY propio
 ```
 
 ## Ejecución
@@ -193,7 +248,8 @@ bash run_all.sh
 ```
 
 El script ejecuta el pipeline completo en orden: descarga, análisis, entrenamiento, evaluación,
-verificador sobre imágenes y análisis de robustez. También puedes correr cada script por separado:
+verificador sobre imágenes y análisis de robustez. También es posible ejecutar cada script por
+separado:
 
 ```bash
 python src/01_download_dataset.py
@@ -219,3 +275,35 @@ tipo de entorno*):
 - Las clases de incumplimiento (NO-) y los objetos pequeños son los más débiles.
 - El análisis se basa en una sola corrida de entrenamiento (semilla fija); no se reportan
   intervalos de confianza sobre múltiples corridas.
+
+## Conclusiones y recomendaciones
+
+### Conclusiones
+
+- El sistema **YOLOv8s + verificador de reglas** resuelve la tarea propuesta de extremo a extremo:
+  detecta a las personas y su EPP con buena calidad (**mAP@0.5 = 0.767**, **precisión = 0.907**) y
+  traduce esas detecciones en un veredicto de cumplimiento interpretable y auditable por persona.
+- La separación entre **detección** y **verificación** demostró ser una decisión de diseño acertada:
+  permite explicar cada veredicto y modificar la política de seguridad sin reentrenar el modelo.
+- El principal hallazgo no es una métrica, sino un **resultado metodológico**: lo que parecía
+  fragilidad ante la oclusión era, en realidad, un efecto del **tamaño del objeto** actuando como
+  variable de confusión. El factor que gobierna la dificultad es el tamaño, no el solapamiento.
+- La debilidad genuina del modelo está acotada y es coherente con la literatura: **objetos pequeños
+  o lejanos** (recall **0.64** en personas pequeñas) y **clases de incumplimiento escasas**, ambas
+  consecuencia del desbalance del dataset.
+
+### Recomendaciones
+
+- **Objetos pequeños:** elevar la resolución de entrada (p. ej. 1280 px) o aplicar inferencia por
+  *tiling* (estilo SAHI) para recuperar detecciones lejanas, la principal fuente de error.
+- **Desbalance de clases:** incorporar *Focal Loss* (Lin et al., 2017), reponderación por clase u
+  *oversampling* dirigido a las clases NO- para fortalecer la detección de incumplimientos.
+- **Verificador:** sustituir progresivamente las reglas geométricas 2D por asociación basada en
+  estimación de **pose**, de modo de tolerar mejor las poses inusuales y la oclusión parcial.
+- **Validez estadística:** repetir el entrenamiento con varias semillas y reportar **intervalos de
+  confianza**, en lugar de una única corrida.
+- **Validación en campo:** evaluar sobre grabaciones reales de obra, dado que el dataset actual
+  sobre-representa las violaciones de EPP y no refleja la distribución operativa.
+- **Despliegue:** medir el rendimiento en **FPS** sobre el hardware objetivo y, para escenarios de
+  borde (*edge*), valorar la variante más liviana **YOLOv8n** según el compromiso precisión/latencia.
+```
